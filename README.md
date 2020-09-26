@@ -6,7 +6,7 @@ Ever wondered which system version a PS4 game requires? well this project is hel
 https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
 
 # Details
-This project compares the game release date and the official firmware release date and determine if a game is playable on that fw or not. This is not 100% accurate
+This project compares the game release date from online sources and the official firmware release date and determine if a game is playable on that fw or not. This is not 100% accurate
 but it's pretty decent as this is still WIP.
 
 **v1.01**
