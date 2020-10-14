@@ -4,6 +4,7 @@ Ever wondered which system version a PS4 game requires? well this project is hel
 # Download link
 **v1.01 (10.4mb)**
 https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
+
 **v2.07 (33.6mb)**
 https://mega.nz/file/PjomwJLQ#8FifEqm5wFUPLIkQ_bBImkG9iwT8k3Qc2E6bzcH2RVc
 
