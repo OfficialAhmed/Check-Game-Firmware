@@ -1,7 +1,7 @@
 # Check Game Firmware (CGFw) 
 Ever wondered which system version a PS4 game requires? well this project is helpful for you.
 
-# Download link
+# Download links
 **v1.01 (10.4mb)**
 https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
 
