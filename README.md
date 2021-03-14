@@ -1,30 +1,19 @@
 # Check Game Firmware (CGFw) 
 Ever wondered which system version a PS4 game requires? well this project is helpful for you.
 
-# Download links
-**v1.01 (10.4mb)**
-https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
+# Latest release
+**v2.08 (34mb) database included for offline use**
+https://mega.nz/file/auA3xSDD#QRF1nMeRH73eS2-O5iPAc5mtQapADz7EOgPORHWrCbU
 
-**v2.07 (33.6mb)**
-https://mega.nz/file/PjomwJLQ#8FifEqm5wFUPLIkQ_bBImkG9iwT8k3Qc2E6bzcH2RVc
+> No longer supports older db link redirected to different database links
 
-# Details
-This tool compares the game and the official firmware release dates then determine if a game is playable on that selected firmware or not. This is not 100% accurate
+> Few bugs patched
+
+> More accurate compatibility percentages when searching
+
+# How it works
+This tool compares the game and the official firmware release dates then determine if a game is playable on selected firmware or not. This is not 100% accurate
 but it's pretty decent as this is still WIP.
-
-**v1.01**
-> This is the first release still few issues here 'n there, if you got any problems feel free to submit them @OfficialAhmed0. 
-I will be improving this project ***(This is not the final version)***.
-
-**v2.07**
-> Huge improvement in terms of the User Interface and more features. (No bugs fixed)
-* Added Ui 
-* Added Offline mode (Thanks to KiiWii aka @DefaultDNB)
-* Added Simple search engine for offline mode ***(Read Search engine section)***
-* Added more official firmwares to pick from
-* Added least firmware required for games
-* Added suggestions if a game title not found
-* Disabled Online mode (Not fully functional)
 
 # Built-in Search engine
 Took me over 500 lines of code and 48+ hours to implement a basic search engine for the offline mode and here's how it may become useful whenever you search.
@@ -55,6 +44,24 @@ Took me over 500 lines of code and 48+ hours to implement a basic search engine 
 * Always run exe as administrator
 * Pick the desired firmware from top left hand corner
 * type the Game Title then search
+
+#Old versions 
+
+**v2.07 (33.6mb)**
+https://mega.nz/file/PjomwJLQ#8FifEqm5wFUPLIkQ_bBImkG9iwT8k3Qc2E6bzcH2RVc
+> Huge improvement in terms of the User Interface and more features. (No bugs fixed)
+* Added Ui 
+* Added Offline mode (Thanks to KiiWii aka @DefaultDNB)
+* Added Simple search engine for offline mode ***(Read Search engine section)***
+* Added more official firmwares to pick from
+* Added least firmware required for games
+* Added suggestions if a game title not found
+* Disabled Online mode (Not fully functional)
+
+**v1.01 (10.4mb)**
+https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
+> This is the first release still few issues here 'n there, if you got any problems feel free to submit them @OfficialAhmed0. 
+I will be improving this project ***(This is not the final version)***.
 
 # User Interface
 
