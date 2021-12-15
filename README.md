@@ -2,9 +2,9 @@
 Ever wondered which system version a PS4 game requires? well this tool is for you.
 
 # Latest release
+**v2.11 (34mb) https://github.com/OfficialAhmed/Check-Game-Firmware/releases/tag/v2.11**
 
-
-
+>[Bug fixed] when clicking on update database it doesn't check nor download it from the online sources
 
 # How it works
 This tool compares the game and the official firmware release dates then determine if a game is playable on selected firmware or not. This is not 100% accurate
