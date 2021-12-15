@@ -1,15 +1,10 @@
 # Check Game Firmware (CGFw) 
-Ever wondered which system version a PS4 game requires? well this project is helpful for you.
+Ever wondered which system version a PS4 game requires? well this tool is for you.
 
 # Latest release
-**v2.08 (34mb) database included for offline use**
-https://mega.nz/file/auA3xSDD#QRF1nMeRH73eS2-O5iPAc5mtQapADz7EOgPORHWrCbU
 
-> No longer supports older db link redirected to different database links
 
-> Few bugs patched
 
-> More accurate compatibility percentages when searching
 
 # How it works
 This tool compares the game and the official firmware release dates then determine if a game is playable on selected firmware or not. This is not 100% accurate
@@ -45,7 +40,15 @@ Took me over 500 lines of code and 48+ hours to implement a basic search engine 
 * Pick the desired firmware from top left hand corner
 * type the Game Title then search
 
-#Old versions 
+#Older versions 
+
+**v2.08 (34mb) database included for offline use**
+https://mega.nz/file/auA3xSDD#QRF1nMeRH73eS2-O5iPAc5mtQapADz7EOgPORHWrCbU
+> No longer supports older db link redirected to different database links
+
+> Few bugs patched
+
+> More accurate compatibility percentages when searching
 
 **v2.07 (33.6mb)**
 https://mega.nz/file/PjomwJLQ#8FifEqm5wFUPLIkQ_bBImkG9iwT8k3Qc2E6bzcH2RVc
