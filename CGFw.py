@@ -175,7 +175,6 @@ class Ui_CGFw(object):
         self.Online_mode.setSizePolicy(sizePolicy)
         self.Online_mode.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.Online_mode.setObjectName("Online_mode")
-        self.Online_mode.setEnabled(False)
         self.Online_mode.setStyleSheet("color:" + self.colors["Warning"] + ";")
         self.horizontalLayout_3.addWidget(self.Online_mode)
         sizePolicy.setHeightForWidth(self.Online_mode.sizePolicy().hasHeightForWidth())
@@ -540,7 +539,7 @@ class Ui_CGFw(object):
         self.Suggestion_Label.setText(_translate("CGFw", "Did you mean ..."))
         self.game_release_label.setText(_translate("CGFw", "Game Release: "))
         self.Online_mode.setText(
-            _translate("CGFw", "Online UNAVAILABLE COMING SOON (Slower, more games)")
+            _translate("CGFw", "Online (Slower, more games)")
         )
         self.l_settings_label.setText(_translate("CGFw", "Local database Settings"))
         self.Offline_mode.setText(_translate("CGFw", "Offline (Faster, less games) "))
@@ -937,17 +936,37 @@ class Ui_CGFw(object):
         elif len(Game) < 2:
             self.updateLogs(
                 self.colors["Warning"]
-                + ";\">[GameTitle]: Is this an abbreviation? well I can't find that."
+                + ";\">[GameTitle]: Is this an abbreviation? Please type the game title or releaseDate"
             )
 
         else:
-            fw = self.fw_selected.currentText()
+            self.setting["fw"] = self.fw_selected.currentText()
+            fw = self.setting["fw"]
+
             if self.Online_mode.isChecked():
-                """ use Google.com as search engine for Online mode to get the possible match of the user input """
+                """ 
+                ####################################################################################################
+                ###   use Google/PS store as search engine for Online mode to get the possible match of the user input 
+                ####################################################################################################
+                """
                 mode = "Online"
 
+                try:
+                    pass
+                except Exception as e:
+                    self.updateLogs(
+                        f"{self.colors['Fail']} ';>[Connection]: Cannot search this game Online. \n\tDEV_Error:' {str(e)} make sure you've Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github"
+                )
+                    
+
+
+
             else:
-                """ Simple Search engine for offline mode to get the possible match of the user input """
+                """ 
+                ####################################################################################################
+                ####    Simple Search engine for offline mode to get the possible match of the user input 
+                ####################################################################################################
+                """
                 mode = "Offline"
 
                 self.relavent = []
@@ -956,10 +975,8 @@ class Ui_CGFw(object):
                     entries = file.readlines()
 
                     for entry in entries:
-                        words = entry.split(" ")
                         if Game in entry or Game.title() in entry:
                             if "Firmware" not in entry and "Unreleased" not in entry:
-                                # if Game in words[0:3] or Game in words[-1:-4]:
                                 self.relavent.append(entry)
 
                 if len(self.relavent) > 1:  # Show Suggestions
