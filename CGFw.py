@@ -532,7 +532,7 @@ class Ui_CGFw(object):
         self.SubmitBtn.setText(_translate("CGFw", "Submit changes"))
         self.comp_label.setText(_translate("CGFw", "Compatibility: "))
         self.UpdateDbBtn.setText(_translate("CGFw", "Update Database"))
-        self.game_title_label.setText(_translate("CGFw", "GameTitle: "))
+        self.game_title_label.setText(_translate("CGFw", "Game Title: "))
         self.g_settings_label.setText(_translate("CGFw", "General Settings"))
         self.select_fw_label.setText(_translate("CGFw", "Select firmware: "))
         self.least_fw_label.setText(_translate("CGFw", "Least fw required:"))
@@ -610,7 +610,6 @@ class Ui_CGFw(object):
                 try:
                     if read[2] != "\n":
                         self.setting["fw"] = read[2].strip()
-                        print(self.setting["fw"])
                     else:
                         self.setting["fw"] = read[3]
                 except Exception as e:
@@ -950,15 +949,46 @@ class Ui_CGFw(object):
                 ####################################################################################################
                 """
                 mode = "Online"
-
                 try:
-                    pass
-                except Exception as e:
-                    self.updateLogs(
-                        f"{self.colors['Fail']} ';>[Connection]: Cannot search this game Online. \n\tDEV_Error:' {str(e)} make sure you've Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github"
-                )
-                    
+                    userSearch = self.GameTitle.text().replace(" ", "+")
+                    GoogleSearch = requests.get(f"https://www.google.com/search?q={userSearch}+playstation+store").text
+                    GoogleSearch = bs(GoogleSearch,"html.parser").prettify()
+                    GoogleTags = GoogleSearch.split("\n")
+                    links = []
+                    HTMLTagCounter = 0
+                    titleFound = ""
+                    for tag in GoogleTags:
+                        if "https://store.playstation.com" in tag and "href" in tag and "product" in tag:
+                            try:
+                                if userSearch.replace("+", " ").lower() in GoogleTags[HTMLTagCounter+4].lower():
+                                    titleFound = GoogleTags[HTMLTagCounter+4].strip()
+                                    links.append(tag[tag.find('https://'):tag.find('/&')])
+                                HTMLTagCounter += 3
+                            except IndexError:
+                                pass
+                        HTMLTagCounter += 1
 
+                    if len(links) != 0: #Found ps store link
+                        self.updateLogs(
+                            self.colors["Success"] + ';">[Found]: '
+                            + titleFound
+                        )
+                        print(f"found this link {links[0]}")
+
+                    else:
+                        self.updateLogs(
+                            self.colors["Fail"]
+                            + ';">[GameTitle]: '
+                            + "Couldn't find " + userSearch.replace('+', ' ') + " on PlayStation Store"
+                        )
+                        
+                except Exception as e:
+                    print(str(e))
+                    self.updateLogs(
+                        self.colors['Fail'] 
+                        + ';">[Connection]: Cannot search this game Online. \n\tDEV_Error:' + str(e)
+                        + 'make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
+                    )
 
 
             else:

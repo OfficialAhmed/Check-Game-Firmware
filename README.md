@@ -5,6 +5,7 @@ Ever wondered which system firmware a PS4 game requires? well this tool is for y
 **https://github.com/OfficialAhmed/Check-Game-Firmware/releases**
 
 >[Bug fixed] doesn't cache FW well and keeps getting the default one
+
 >[Bug fixed] wrong Fw reading from offline Db
 
 # How it works
@@ -17,11 +18,13 @@ Took me over 500 lines of code and 48+ hours to implement a basic search engine 
 * Search all by release date
 
 > For games released in 2020 **Search for 2020**
+
 > For games released in November (Only type the first 3 letters of the month) **Search for Nov** 
 
 * Search all by genre
 
 > For all Adventure genre **Search for adventure** 
+
 > For all Action genre **Search for action** 
 
 * Search all DLCs
