@@ -1,3 +1,4 @@
+from logging import exception
 import requests
 import re
 import os
@@ -8,8 +9,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_CGFw(object):
     def setupUi(self, CGFw):
-        self.ver = 2.11
+        self.ver = 2.24
         self.app_dir = os.getcwd()
+        self.fw_db = {"dir": self.app_dir + "\db\\", "name": "fw release date.ini"}
         self.db = {
             "dir": self.app_dir + "\db",
             "name": "PS4 db.txt",
@@ -33,10 +35,8 @@ class Ui_CGFw(object):
             "Nov": 11,
             "Dec": 12,
         }
-        self.fw_db = {"dir": self.app_dir + "\db\\", "name": "fw release date.ini"}
         self.firmwares = []
-
-        self.setting = {"show fw": 0, "fw": "7.55"}
+        self.setting = {"show fw": 4, "fw": "9.51", "mode": "Offline"}
         self.logging = """<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n
                           <html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n
                           p, li { white-space: pre-wrap; }\n
@@ -138,7 +138,6 @@ class Ui_CGFw(object):
         self.num_fw_selected.setFrame(True)
         self.num_fw_selected.setAlignment(QtCore.Qt.AlignCenter)
         self.num_fw_selected.setMinimum(2)
-        self.num_fw_selected.setProperty("value", self.setting["show fw"])
         self.num_fw_selected.setObjectName("num_fw_selected")
         sizePolicy.setHeightForWidth(
             self.num_fw_selected.sizePolicy().hasHeightForWidth()
@@ -175,7 +174,6 @@ class Ui_CGFw(object):
         self.Online_mode.setSizePolicy(sizePolicy)
         self.Online_mode.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.Online_mode.setObjectName("Online_mode")
-        self.Online_mode.setStyleSheet("color:" + self.colors["Warning"] + ";")
         self.horizontalLayout_3.addWidget(self.Online_mode)
         sizePolicy.setHeightForWidth(self.Online_mode.sizePolicy().hasHeightForWidth())
 
@@ -187,7 +185,7 @@ class Ui_CGFw(object):
         self.SubmitBtn.setSizePolicy(sizePolicy)
         self.SubmitBtn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.SubmitBtn.setObjectName("SubmitBtn")
-        self.SubmitBtn.clicked.connect(self.display_latest_fw)
+        self.SubmitBtn.clicked.connect(self.write_set_ini)
         self.verticalLayout_4.addWidget(self.SubmitBtn)
         self.verticalLayout_3.addLayout(self.verticalLayout_4)
         sizePolicy.setHeightForWidth(self.SubmitBtn.sizePolicy().hasHeightForWidth())
@@ -266,9 +264,7 @@ class Ui_CGFw(object):
         self.entries_num.setStyleSheet("color: rgb(73, 170, 255);")
         self.entries_num.setFrameShadow(QtWidgets.QFrame.Plain)
         self.entries_num.setLineWidth(1)
-        self.entries_num.setDigitCount(len(str(self.db["Local entries"])))
         self.entries_num.setSegmentStyle(QtWidgets.QLCDNumber.Flat)
-        self.entries_num.setProperty("value", self.db["Local entries"])
         self.entries_num.setObjectName("entries_num")
         self.horizontalLayout_8.addWidget(self.entries_num)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -506,9 +502,12 @@ class Ui_CGFw(object):
         self.horizontalLayout_6.addWidget(self.SelectBtn)
         self.gridLayout_3.addWidget(self.SuggestionLayout, 1, 1, 1, 1)
 
-        # Setup loacal database
-        self.setupDb()  # Check and make sure for a vaild db otherwise download
+        # Setup local database
+        self.setupDb()  # Check and make sure for a vaild db, otherwise download
         self.Check_db("Found")  # update entries for next run
+        self.updatelocal_db_settings()
+        self.render_fws()
+
 
         CGFw.setCentralWidget(self.centralwidget)
         self.retranslateUi(CGFw)
@@ -529,7 +528,7 @@ class Ui_CGFw(object):
         self.status_label.setText(_translate("CGFw", "Status:"))
         self.GameReleaseDate.setText(_translate("CGFw", "None"))
         self.mode_label.setText(_translate("CGFw", "Search mode: "))
-        self.SubmitBtn.setText(_translate("CGFw", "Submit changes"))
+        self.SubmitBtn.setText(_translate("CGFw", "Save and update changes"))
         self.comp_label.setText(_translate("CGFw", "Compatibility: "))
         self.UpdateDbBtn.setText(_translate("CGFw", "Update Database"))
         self.game_title_label.setText(_translate("CGFw", "Game Title: "))
@@ -566,10 +565,33 @@ class Ui_CGFw(object):
             )
         )
 
-        # Selected fw default
+    def readSetting(self):
+        # Local setting file (set.ini)
+        try:
+            with open("set.ini", "r") as setting_file:
+                read = setting_file.readline().split(";")
+                self.setting["show fw"] = int(read[0])
+                self.db["Local entries"] = int(read[1])
+                self.setting["fw"] = read[2]
+                self.setting["mode"] = read[3] 
+                
+        except Exception as e:  
+            print("Set.ini Not found", str(e))
+            with open("set.ini", "w+") as setting_file:
+                data = (
+                    str(self.setting["show fw"])
+                    + ";"
+                    + str(self.db["Local entries"])
+                    + ";"
+                    + self.setting["fw"]
+                    + ";"
+                    + self.setting["mode"]
+                )
+                setting_file.write(data)
+        
         try:
             with open(
-                str(os.getcwd()) + "\db\\" + "fw release date.ini",
+                self.fw_db["dir"] + self.fw_db["name"],
                 "r",
                 encoding="utf-8",
             ) as fw_file:
@@ -589,58 +611,79 @@ class Ui_CGFw(object):
             database_location = self.db["dir"] + "\\" + self.db["name"]
             database_size = round(
                 os.path.getsize(database_location) / 1024
-            )  # in Kilobytes
+            )
             # local database found ? check size
             if os.path.exists(database_location) == True:
-                if (
-                    database_size < 400
-                ):  # Always work with size greater than 400kb database else update it
+                if (database_size < 400):  # Always work with size greater than 400kb database else update it
                     self.Check_db("Not found")
+                else:
+                    try:
+                        with open(database_location, encoding="UTF-8") as file:
+                            self.db["Local entries"] = len(file.readlines())
+                    except Exception as e:
+                        self.updateLogs(
+                            self.colors["Fail"]
+                            + ';">[Database]: Couldn\'t read database.Try restarting, or update database. Otherwise, contact dev \nDev_Error: '
+                            + str(e)
+                        )
             else:
                 self.Check_db("Not found")
         except:
             self.Check_db("Not found")
 
-        # Local setting file (set.ini)
-        try:
-            with open("set.ini", "r") as setting_file:
-                read = setting_file.readlines()
-                self.setting["show fw"] = int(read[0])
-                self.db["Local entries"] = int(read[1])
-                try:
-                    if read[2] != "\n":
-                        self.setting["fw"] = read[2].strip()
-                    else:
-                        self.setting["fw"] = read[3]
-                except Exception as e:
-                    print("Cannot read lines 2 & 3. Dev|", str(e))
+    def read_set_ini(self): 
+        """
+        ###############################################################################################
+        ########                Fetch and set data from ini file                              #########
+        ###############################################################################################
+        """
+        with open("set.ini") as file:
+            data = file.readline().split(";")
 
-        except Exception as e:  # If file is empty or not found
-            print(e)
-            with open("set.ini", "w+") as setting_file:
-                self.setting["show fw"] = 4
-                self.db["Local entries"] = 0
-                self.setting["fw"] = "7.02"
-                data = (
-                    str(self.setting["show fw"])
-                    + "\n"
-                    + str(self.db["Local entries"])
-                    + "\n"
-                    + self.setting["fw"]
-                )
-                setting_file.write(data)
+            self.setting["show fw"] = int(data[0])
+            self.db["Local entries"] = int(data[1])
+            self.setting["fw"] = data[2]
+            self.setting["mode"] = data[3]
 
-    def updateSet_ini(self, num):
-        with open("set.ini", "r") as file:
-            read = file.readlines()
-            read[1] = str(len(num)) + "\n"
-            self.db["Local entries"] = len(num)
+            self.num_fw_selected.setValue(int(data[0]))
+            self.entries_num.display(data[1])
+            self.fw_selected.setCurrentIndex(self.fw_selected.findText(data[2]))
+            if data[3] == "Online":
+                self.Online_mode.setChecked(True)
+            else:
+                self.Offline_mode.setChecked(True)
+    
+    def write_set_ini(self):
+        """
+        ###############################################################################################
+        ########                     Store set of data into ini                               #########
+        ###############################################################################################
+        """
+        # Prepare and Double check data before overwiritting
+        self.setting["show fw"] = self.num_fw_selected.value()
+        if self.db["Online entries"] != 0:
+            self.db["Local entries"] = self.db["Online entries"]
+        else:
+            #read db and get num of entries
+            pass
 
-        # read.remove("\n")
-        with open("set.ini", "w") as file:
-            for i in read:
-                file.write(str(i))
+        self.setting["fw"] = self.fw_selected.currentText()
+        if self.Online_mode.isChecked():
+            self.setting["mode"] = "Online"
+        else:
+            self.setting["mode"] = "Offline"
 
+        # Save data
+        with open("set.ini", "w+") as file:
+            data = [
+                self.setting["show fw"],
+                self.db["Local entries"],
+                self.setting["fw"],
+                self.setting["mode"]]
+    
+            for new_data in data:
+                file.write(str(new_data)+";")
+              
     def updateLogs(self, l):
         start_style = '<p align="center" style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-size:10pt; color:'
         end_style = "</span></p>\n"
@@ -653,10 +696,11 @@ class Ui_CGFw(object):
         self.status.setText(line)
 
     def updatelocal_db_settings(self, updated=False):
+        
         self.entries_num.setDigitCount(
-            len(str(self.db["Local entries"]))
-        )  # Center numbers
-        self.entries_num.setProperty("value", self.db["Local entries"])
+            len(str(self.db["Local entries"])) # align digits => by num of digits "center"
+        )
+        self.entries_num.display(self.db["Local entries"])
         self.num_fw_selected.setProperty("value", self.setting["show fw"])
         if updated == False:
             self.updateStatus(self.colors["Warning"], "Click on check button")
@@ -690,14 +734,17 @@ class Ui_CGFw(object):
                                 .replace(",", " ")
                             )
                             if (
-                                "1.05" not in fw
-                                and "1.01" not in fw
-                                and "1.06" not in fw
+                                "1." not in fw
+                                and "1." not in fw
+                                and "1." not in fw 
+                                and "0A" not in fw
+                                and "0B" not in fw
+                                and "0C" not in fw
                             ):
                                 fws.append(fw)
 
         with open(
-            str(os.getcwd()) + "\db\\" + "fw release date.ini", "w+", encoding="utf-8"
+            self.fw_db["dir"] + self.fw_db["name"], "w+", encoding="utf-8"
         ) as write_fw_file:
             fws.sort()
             for fw in fws:
@@ -733,81 +780,44 @@ class Ui_CGFw(object):
                 self.UpdateRequested()
 
             elif Db_state == "Found":
-                # Local Database found in db folder
-                # Get total entries from local database
-                total = ""
-                with open(
-                    self.db["dir"] + "\\" + self.db["name"], "r", encoding="UTF-8"
-                ) as local_db:
-                    total = local_db.readlines()
-
-                # Update settings with the new total entries
-                self.updateSet_ini(total)
-
+                self.entries_num.display(self.db["Local entries"])
                 self.GrabFwFrom("local")
-                self.display_latest_fw(True)
+                self.render_fws()
                 self.updatelocal_db_settings()
 
             else:  # if result == False
                 self.UpdateRequested()
         except:
             self.updateLogs(
-                self.colors["Warning"] + "[Database]: Cannot download database."
+                self.colors["Warning"] + "[Database]: Cannot download."
             )
 
-    def display_latest_fw(self, firstTime=False):
-        # Take only first part of the fw (version)
-        firmwares = self.setting["show fw"]
-        if firstTime == True:
-            try:
-                with open(self.fw_db["dir"] + self.fw_db["name"]) as file:
-                    fws = file.readlines()
-                    for show in range(firmwares):
-                        show_fw = fws[-1 - show].split(" ")[0]
-                        self.fw_selected.addItem(str(show_fw))
-                    self.num_fw_selected.setMaximum(len(fws) - 2)
-            except IndexError:
-                self.updateLogs(
-                    self.colors["Fail"]
-                    + ';">[Internet]: Cannot fetch firmwares from database. Database cannot be downloaded'
-                )
-                self.updateStatus(self.colors["Fail"], "Download required")
-            except Exception as e:
-                self.updateLogs(
-                    self.colors["Fail"]
-                    + ';">[Internet]: Cannot download firmwares data. DEV_Error:'
-                    + str(e)
-                )
-                self.updateStatus(self.colors["Fail"], "Download required")
+    def render_fws(self):
+        firmwares_2_show = self.num_fw_selected.value()
+    
+        try:
+            with open(self.fw_db["dir"] + self.fw_db["name"]) as file:
+                self.fw_selected.clear()
 
-        else:
-            difference = 0
-            if firmwares > self.num_fw_selected.value():  # Lower the number of fws
-                difference = firmwares - self.num_fw_selected.value()
-                for last_item in range(difference):
-                    self.fw_selected.removeItem(firmwares - 1 - last_item)
-                self.setting["show fw"] -= difference
-            elif firmwares < self.num_fw_selected.value():  # higher the number of fws
-                difference = self.num_fw_selected.value() - firmwares
-                for item in range(difference):
-                    self.fw_selected.addItem(str(self.firmwares[-firmwares - 1 - item]))
-                self.setting["show fw"] += difference
-            self.SubmitBtn.setText("Changes saved!")
-            self.SubmitBtn.setDisabled(True)
-            self.num_fw_selected.setDisabled(True)
+                all_fws = [x.split(" ")[0] for x in file.readlines()]
+                all_fws.reverse()
+                self.num_fw_selected.setRange(1, len(all_fws))
+                self.fw_selected.addItems(all_fws[:firmwares_2_show])
 
-            # Update set.ini
-            wanted_data = []
-            with open("set.ini", "r") as setting_r:
-                lines = setting_r.readlines()
-                # num of shown fws
-                wanted_data.append(str(self.setting["show fw"]))
-                wanted_data.append(lines[1].strip())  # total db entries
-                wanted_data.append(self.fw_selected.currentText())  # selected fw
-
-            with open("set.ini", "w") as setting_w:
-                for line in wanted_data:
-                    setting_w.write(line + "\n")
+            self.updateLogs(
+                self.colors["Success"]
+                + ';">[Setting]: Generated cache'
+            )
+            self.readSetting()
+            self.read_set_ini()
+            
+        except Exception as e:
+            self.updateLogs(
+                self.colors["Fail"]
+                + ';">[Unknown]: Cannot fetch firmwares data. DEV_Error: Related to fw file => '
+                + str(e)
+            )
+            self.updateStatus(self.colors["Fail"], "Download required")           
 
     def UpdateRequested(self):
         self.UpdateDbBtn.setEnabled(False)
@@ -823,7 +833,7 @@ class Ui_CGFw(object):
                     self.UpdateDbBtn.setEnabled(True)
                     self.updateLogs(
                         self.colors["Success"]
-                        + ';">[Database]: Cannot find a later version for database. Current one is the latest'
+                        + ';">[Database]: Current one is the latest'
                     )
                     self.updatelocal_db_settings(True)
             else:
@@ -839,6 +849,7 @@ class Ui_CGFw(object):
             self.db["Online entries"] = grabInfo.count("\n")
 
             if self.db["Online entries"] > self.db["Local entries"]:
+                self.db["Local entries"] = self.db["Online entries"]
                 Games = requests.get(self.db["data"]).text.split(
                     "\n"
                 )  # all entries From DEFAULTDNB db
@@ -855,15 +866,14 @@ class Ui_CGFw(object):
                         self.updateProgressBar(progress)
 
                 self.GrabFwFrom("local")
-                self.display_latest_fw(True)
+                self.render_fws()
+                self.write_set_ini()
 
-                # store entries num
-                self.updateSet_ini(Games)
                 self.updateLogs(
-                    self.colors["Success"] + ';">[Database]: Downloaded successfully.'
+                    self.colors["Success"] + ';">[Database]: Downloaded successfully. Restart required'
                 )
+
                 self.updateStatus(self.colors["Success"], "This is the latest database")
-                # end of block
 
                 self.CheckBtn.setEnabled(True)
                 self.GameTitle.setEnabled(True)
@@ -912,7 +922,7 @@ class Ui_CGFw(object):
             "What are you doing?",
             "You kidding me?",
             "Have you lost your mind?",
-            "You gotta be kiddin' me...",
+            "You've gotta be kiddin' me...",
             "What in the world",
             "Ok now stop it...",
             "Stop confussing me...",
@@ -948,7 +958,7 @@ class Ui_CGFw(object):
                 ###   use Google/PS store as search engine for Online mode to get the possible match of the user input 
                 ####################################################################################################
                 """
-                mode = "Online"
+                self.setting["mode"] = "Online"
                 try:
                     userSearch = self.GameTitle.text().replace(" ", "+")
                     GoogleSearch = requests.get(f"https://www.google.com/search?q={userSearch}+playstation+store").text
@@ -981,15 +991,13 @@ class Ui_CGFw(object):
                             + ';">[GameTitle]: '
                             + "Couldn't find " + userSearch.replace('+', ' ') + " on PlayStation Store"
                         )
-                        
+
                 except Exception as e:
-                    print(str(e))
                     self.updateLogs(
                         self.colors['Fail'] 
-                        + ';">[Connection]: Cannot search this game Online. \n\tDEV_Error:' + str(e)
-                        + 'make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
+                        + ';">[Connection]: Cannot search this game Online. \nDEV_Error: ' + str(e)
+                        + ' Make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
                     )
-
 
             else:
                 """ 
@@ -997,7 +1005,7 @@ class Ui_CGFw(object):
                 ####    Simple Search engine for offline mode to get the possible match of the user input 
                 ####################################################################################################
                 """
-                mode = "Offline"
+                self.setting["mode"] = "Offline"
 
                 self.relavent = []
                 self.entry = ""
@@ -1171,7 +1179,6 @@ class Ui_CGFw(object):
             return "90"
         else:
             return str(100 - diff * temp)
-
 
 if __name__ == "__main__":
     import sys
