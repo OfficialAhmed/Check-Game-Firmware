@@ -501,13 +501,13 @@ class Ui_CGFw(object):
         self.SelectBtn.setObjectName("SelectBtn")
         self.horizontalLayout_6.addWidget(self.SelectBtn)
         self.gridLayout_3.addWidget(self.SuggestionLayout, 1, 1, 1, 1)
+        self.SelectBtn.clicked.connect(self.SelectGame)
 
         # Setup local database
         self.setupDb()  # Check and make sure for a vaild db, otherwise download
         self.Check_db("Found")  # update entries for next run
         self.updatelocal_db_settings()
         self.render_fws()
-
 
         CGFw.setCentralWidget(self.centralwidget)
         self.retranslateUi(CGFw)
@@ -528,7 +528,7 @@ class Ui_CGFw(object):
         self.status_label.setText(_translate("CGFw", "Status:"))
         self.GameReleaseDate.setText(_translate("CGFw", "None"))
         self.mode_label.setText(_translate("CGFw", "Search mode: "))
-        self.SubmitBtn.setText(_translate("CGFw", "Save and update changes"))
+        self.SubmitBtn.setText(_translate("CGFw", "Save setting"))
         self.comp_label.setText(_translate("CGFw", "Compatibility: "))
         self.UpdateDbBtn.setText(_translate("CGFw", "Update Database"))
         self.game_title_label.setText(_translate("CGFw", "Game Title: "))
@@ -929,7 +929,7 @@ class Ui_CGFw(object):
             "I'm not Google to guess the game title for you...",
             "Quit playing around...",
             "I ain't stupid...",
-            "Seriously Stop it...",
+            "Seriously Stop it..."
         )
 
         Game = self.GameTitle.text().strip()
@@ -950,55 +950,33 @@ class Ui_CGFw(object):
 
         else:
             self.setting["fw"] = self.fw_selected.currentText()
-            fw = self.setting["fw"]
 
             if self.Online_mode.isChecked():
                 """ 
                 ####################################################################################################
-                ###   use Google/PS store as search engine for Online mode to get the possible match of the user input 
+                ###   use PS store as search engine for Online mode to get the possible match of the user input 
                 ####################################################################################################
                 """
                 self.setting["mode"] = "Online"
-                try:
-                    userSearch = self.GameTitle.text().replace(" ", "+")
-                    GoogleSearch = requests.get(f"https://www.google.com/search?q={userSearch}+playstation+store").text
-                    GoogleSearch = bs(GoogleSearch,"html.parser").prettify()
-                    GoogleTags = GoogleSearch.split("\n")
-                    links = []
-                    HTMLTagCounter = 0
-                    titleFound = ""
-                    for tag in GoogleTags:
-                        if "https://store.playstation.com" in tag and "href" in tag and "product" in tag:
-                            try:
-                                if userSearch.replace("+", " ").lower() in GoogleTags[HTMLTagCounter+4].lower():
-                                    titleFound = GoogleTags[HTMLTagCounter+4].strip()
-                                    links.append(tag[tag.find('https://'):tag.find('/&')])
-                                HTMLTagCounter += 3
-                            except IndexError:
-                                pass
-                        HTMLTagCounter += 1
+                TotalFetchedGameTitles = -1
 
-                    if len(links) != 0: #Found ps store link
-                        self.updateLogs(
-                            self.colors["Success"] + ';">[Found]: '
-                            + titleFound
-                        )
-                        print(f"found this link {links[0]}")
-
-                    else:
-                        self.updateLogs(
-                            self.colors["Fail"]
-                            + ';">[GameTitle]: '
-                            + "Couldn't find " + userSearch.replace('+', ' ') + " on PlayStation Store"
-                        )
-
-                except Exception as e:
+                self.gameTitles = self.fetchGameTitles()
+                if type(self.gameTitles) is dict:
+                    TotalFetchedGameTitles = len(self.gameTitles)
+               
+                if TotalFetchedGameTitles > 0: #Found ps store links
                     self.updateLogs(
-                        self.colors['Fail'] 
-                        + ';">[Connection]: Cannot search this game Online. \nDEV_Error: ' + str(e)
-                        + ' Make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
+                        self.colors["Success"] + ';">[Found]: ' + str(TotalFetchedGameTitles) + " titles for "
+                        + self.GameTitle.text()
                     )
 
+                    self.Suggestions.clear()
+                    for title in self.gameTitles.keys():
+                        self.Suggestions.addItem(" " * 4 + title)
+
+                    self.Suggestions.setCurrentIndex(0)
+                    self.SuggestionLayout.show()
+                    self.Suggestions.setFocus()
             else:
                 """ 
                 ####################################################################################################
@@ -1021,9 +999,9 @@ class Ui_CGFw(object):
                     for GameTitleFromDB in self.relavent:
                         title = GameTitleFromDB[: GameTitleFromDB.find("(")]
                         self.Suggestions.addItem(" " * 4 + title)
+
                     self.SuggestionLayout.show()
                     self.Suggestions.setFocus()
-                    self.SelectBtn.clicked.connect(self.SelectGame)
                     self.updateLogs(
                         self.colors["Warning"]
                         + ';">[GameTitle]: found '
@@ -1052,88 +1030,219 @@ class Ui_CGFw(object):
                     )
                     self.CheckBtn.setEnabled(True)
 
-    def SelectGame(self):
+    def getHTMLTags(self, link):
         try:
-            self.entry = self.relavent[self.Suggestions.currentIndex()]
-            ChosenGameTitle = self.Suggestions.currentText().strip()
+            webpage = requests.get(link).text
+            webpage = bs(webpage,"html.parser").prettify()
+            tags = webpage.split("\n")
+            return tags
+        except Exception as e:
+            self.updateLogs(
+            self.colors['Fail'] 
+            + ';">[Connection]: Cannot search this game Online. \nDEV_Error: ' + str(e)
+            + ' Make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
+        )
+
+    def fetchGameTitles(self):
+    
+        """
+        ##################################################################################
+        ##########          Get game titles and their links from PS Store            #####
+        ##################################################################################
+        """
+        try:
+            userSearch = self.GameTitle.text().replace(" ", "%20")
+            storeSearch = f"https://store.playstation.com/en-us/search/{userSearch}"
+            gameInfoClass = 'data-telemetry-meta='
+            html = self.getHTMLTags(storeSearch)
+
+            gameTitles = {}
+            lastNameFound = None
+
+            for tag in html:
+                try:
+                    if gameInfoClass in tag:
+                        name = tag[tag.index('"name":"')+8 : tag.index('","price')].replace("&apos;", "")
+                        lastNameFound = name
+                        gameTitles[name] = ""
+
+                    if 'href="/en-us/product' in tag:
+                        gameLink = 'https://store.playstation.com/' + tag[tag.index('href="')+6 : tag.index('" id=')]
+                        gameTitles[lastNameFound] = gameLink
+                except:
+                    pass #Cannot find link for game title just skip it
+            return gameTitles
+
+        except Exception as e:
+            self.updateLogs(
+                self.colors['Fail'] 
+                + ';">[Connection]: Cannot search this game Online. \nDEV_Error: ' + str(e)
+                + ' Make sure you\'ve Internet connection. Otherwise, send me a screenshot of the Dev_error or submit an issue on Github'
+            )
+
+    def SelectGame(self):
+        """
+        ######################################################################################################
+        ########           From drop down list of suggested games                       ######################
+        ######################################################################################################
+        """
+        ChosenGameTitle = self.Suggestions.currentText().strip()
+        
+        if self.setting["mode"] == "Offline":
+            obj = self.relavent
+            try:
+                self.entry = obj[self.Suggestions.currentIndex()]
+                self.GameTitle.setText(ChosenGameTitle)
+                self.setGameSpec()
+                self.isCompatible()
+                self.Suggestions.clear()
+                self.SuggestionLayout.hide()
+            except Exception as e:
+                print(e)
+                """
+                * Temporary fix *
+                    loop when search clicked more than once by clearing relavent list results
+                    handle occured error by passing empty exception
+                """
+                pass
+        else:
+            obj = self.gameTitles
+            tags = self.getHTMLTags(obj[self.Suggestions.currentText().strip()])
+            releaseDateTag = 'data-qa="gameInfo#releaseInformation#releaseDate-value">'
+
+            releaseDate = None
+            tagCounter = 0
+            for tag in range(len(tags)):
+                if releaseDateTag in tags[tag]:
+                    releaseDate = tags[tag+1].strip()
+                    break
+                tagCounter += 1 
+
+            if releaseDate != None:
+                self.isCompatible(releaseDate)
+            else:
+                self.updateLogs(
+                    self.colors["Fail"]
+                    + ';">[ReleaseDate]: '
+                    + "Couldn't fetch date from store, store might've been changed. Please contact developer"
+                )
             self.GameTitle.setText(ChosenGameTitle)
-            # Remove suggestions / relavent
             self.Suggestions.clear()
             self.SuggestionLayout.hide()
-            self.isCompatible()
-        except:
-            """
-            * Temporary fix *
-            loop when search clicked more than once by clearing relavent list results
-            handle occured error by passing empty exception
-            """
-            pass
+        
 
-    def isCompatible(self):
-        self.relavent.clear()
-        self.CheckBtn.setEnabled(False)
-
-        # Firmware specifications
+    def isLatestFw(self):
         FwReleaseDate = self.fw_selected.currentText()
         latest_fw = False
         if FwReleaseDate == self.firmwares[-1]:
             latest_fw = True
 
+        return latest_fw
+
+    def leastFw(self, year, month, day):
+        with open(self.fw_db["dir"] + self.fw_db["name"]) as file:
+            fws = file.readlines()
+            pos = 0
+
+            for fw in fws:
+                fw_info = fw.split(" ")
+                self.fw_year = fw_info[-1].strip()
+                self.fw_month = self.month[fw_info[1]]
+                if year <= int(self.fw_year):
+                    if month <= self.fw_month:
+                        break
+                pos += 1
+            # Get 2nd most early fw which most probably will be the least
+            self.LeastFw.setText(fws[pos - 1].split(" ")[0])
+
+    def setFwSpec(self):
+        # Set Firmwares specifications
+        FwReleaseDate = self.fw_selected.currentText()
+        latest_fw = self.isLatestFw()
+
         self.fw_year, self.later_fw_year = 0, 0
         self.fw_month, self.later_fw_month = 0, 0
         self.fw_day, self.later_fw_day = 0, 0
+
         with open(self.fw_db["dir"] + self.fw_db["name"]) as fw_file:
             read = fw_file.readlines()
             for i in read:
                 if FwReleaseDate in i:
                     slice = i.split(" ")
+
                     self.fw_year = slice[-1]
                     self.fw_month = self.month[slice[1]]
                     self.fw_day = slice[2]
+
                 if latest_fw == False:  # Look for a later fw date
                     if self.firmwares[self.firmwares.index(FwReleaseDate) + 1] in i:
                         slice = i.split(" ")
+
                         self.later_fw_year = int(slice[-1].strip())
                         self.later_fw_month = self.month[slice[1]]
                         self.later_fw_day = int(slice[2].strip())
-        # GameTitle specifications
-        beginSlice = self.entry.find("[") + 1
-        endSlice = self.entry.find("]")
-        GameReleaseDate = self.entry[beginSlice:endSlice]
-        self.Game_year = int(GameReleaseDate[-4:].strip())
-        self.Game_month = self.month[GameReleaseDate[:3]]
-        self.Game_day = int(
-            GameReleaseDate[
-                GameReleaseDate.find(" ") : GameReleaseDate.find(",")
-            ].strip()
-        )
 
+    def setGameSpec(self, releaseDate=None): # None releaseDate = Offline, else Online
+        # GameTitle specifications
+        if self.setting["mode"] == "Offline":
+            GameReleaseDate = self.entry[self.entry.find("[") + 1 : self.entry.find("]")]
+            self.Game_year = int(GameReleaseDate[-4:].strip())
+            self.Game_month = self.month[GameReleaseDate[:3]]
+            self.Game_day = int(
+                GameReleaseDate[
+                    GameReleaseDate.find(" ") : GameReleaseDate.find(",")
+                ].strip()
+            )
+        else:
+            GameReleaseDate = ""
+            releaseDate  = releaseDate.split("/") # format 9/24/2021 => dd/mm/yyyy
+            for monthName, monthNum in self.month.items():
+                if monthNum == int(releaseDate[0]):
+                    GameReleaseDate += monthName + " " + releaseDate[1] + ", " + releaseDate[2]
+                    self.Game_year = int(releaseDate[2])
+                    self.Game_month = int(releaseDate[1])
+                    self.Game_day = int(monthNum)
+                    break
+            
+        return GameReleaseDate
+
+    def isCompatible(self, releaseDate=None): # None releaseDate = Offline, else Online
+        #  Clear suggested titles if available otherwise pass clearing method
+        try:
+            self.relavent.clear()
+        except:
+            pass
+
+        self.CheckBtn.setEnabled(False)
+
+        self.setFwSpec()
+
+        self.GameReleaseDate.setText(self.setGameSpec(releaseDate))
         self.leastFw(self.Game_year, self.Game_month, self.Game_day)
-        # 6 and fw year 4
-        self.GameReleaseDate.setText(GameReleaseDate)
-        if latest_fw == False:  # If this is not the latest official firmware available
+
+        if not self.isLatestFw(): # Isnt latest fw available
             if self.Game_year == self.later_fw_year:
                 if self.Game_month <= self.later_fw_month:
                     if self.Game_day <= self.later_fw_day:
-                        self.DisplayCompatible()
+                        self.ReRenderCompStyle(True)
                     else:
-                        self.DisplayCompatible()
+                        self.ReRenderCompStyle(True)
                 else:
-                    self.DisplayCompatible("Not sure")
+                    self.ReRenderCompStyle("Not sure")
             elif self.Game_year < self.later_fw_year:
-                self.DisplayCompatible()
+                self.ReRenderCompStyle(True)
             else:
-                self.DisplayCompatible("no")
-        else:  # If this is the latest official firmware available
-            self.DisplayCompatible()
+                self.ReRenderCompStyle(False)
+        else:  # latest fw available
+            self.ReRenderCompStyle(True)
 
-    def DisplayCompatible(self, it_is="yes"):
-        if it_is == "yes":
+    def ReRenderCompStyle(self, isComp):
+        if isComp == True:
             self.Comp.setText("Compatible")
             self.Comp.setStyleSheet("color:" + self.colors["Success"] + ";")
             self.GameReleaseDate.setStyleSheet("color:" + self.colors["Success"] + ";")
             self.LeastFw.setStyleSheet("color:" + self.colors["Success"] + ";")
-        elif it_is == "no":
+        elif isComp == False:
             self.Comp.setText("Incompatible")
             self.Comp.setStyleSheet("color:" + self.colors["Fail"] + ";")
             self.GameReleaseDate.setStyleSheet("color:" + self.colors["Fail"] + ";")
@@ -1149,28 +1258,14 @@ class Ui_CGFw(object):
             self.LeastFw.setStyleSheet("color:" + self.colors["Warning"] + ";")
         self.CheckBtn.setEnabled(True)
 
-    def leastFw(self, year, month, day):
-        with open(self.fw_db["dir"] + self.fw_db["name"]) as file:
-            fws = file.readlines()
-            pos = 0
-            # fws.reverse()
-            for fw in fws:
-                fw_info = fw.split(" ")
-                self.fw_year = fw_info[-1].strip()
-                self.fw_month = self.month[fw_info[1]]
-                if year <= int(self.fw_year):
-                    if month <= self.fw_month:
-                        break
-                pos += 1
-            # Get 2nd most early fw which most probably will be the least
-            self.LeastFw.setText(fws[pos - 1].split(" ")[0])
-
     def calculateChance(self):
         """
-        calculate the difference between the months to
-        determine approx. % of compatiblity
+        ######################################################################################################
+        ########         calculate Difference between the months to                     ######################
+        ########            determine approx. % of compatiblity                         ######################
+        ######################################################################################################
         """
-        diff = self.Game_month - self.later_fw_month  # difference
+        diff = self.Game_month - self.later_fw_month
         temp = 21
 
         if diff >= 100:
@@ -1178,7 +1273,7 @@ class Ui_CGFw(object):
         elif diff == 0:
             return "90"
         else:
-            return str(100 - diff * temp)
+            return str(abs(100 - diff * temp))
 
 if __name__ == "__main__":
     import sys

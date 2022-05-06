@@ -1,16 +1,16 @@
 # Check Game Firmware (CGFw) 
-Ever wondered which firmware a PS4 game requires? well this tool is for you.
+Ever wondered what firmware PS4 game requires? well this tool is for you.
 
 ### *Download Latest release:-*
 ##### https://github.com/OfficialAhmed/Check-Game-Firmware/releases
 ### *Update Notes:-*
 
-- **[Feature]** *Online mode is now available*. Google search engine used, thus requires user to be precise and accurate about game titles i.e.(*Type **fifa 22** instead of only **fifa***). No recommendations nor spelling check from CGFw all handled by Google. Only games available on PlayStation Store will be recognized.
+- **[Feature]** *Online mode is now available*. Google search engine used, thus requires user to be precise and accurate about game titles i.e.(*Type **fifa 22** instead of only **fifa***). No spelling check from CGFw all handled by the online engine. Only games available on PlayStation Store will be recognized.
 - **[Fixed]** Doesn't cache Fw and keeps showing the default one
 - **[Fixed]** Wrong Fw reading from offline Db
 - **[Enhancement]** Removed alpha firmwares as well as fw starting with (1)
 - **[Enhancement]** Mode will also be cached now on (Save and update changes button click)
-- **[Enhancement]** No reload needed after (Save and update changes)
+- **[Enhancement]** No reload needed after (Save settings)
 - **[Enhancement]** Minimized codes/repetitions + Changed different approaches to many problems
 
 ### *How it works*
