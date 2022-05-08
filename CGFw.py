@@ -1,11 +1,7 @@
-from logging import exception
 import requests
-import re
 import os
-import time
 from bs4 import BeautifulSoup as bs
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_CGFw(object):
     def setupUi(self, CGFw):
