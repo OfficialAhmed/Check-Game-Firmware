@@ -644,6 +644,8 @@ class Ui_CGFw(object):
             self.num_fw_selected.setValue(int(data[0]))
             self.entries_num.display(data[1])
             self.fw_selected.setCurrentIndex(self.fw_selected.findText(data[2]))
+            
+            # update: one statement is enough
             if data[3] == "Online":
                 self.Online_mode.setChecked(True)
             else:
@@ -660,10 +662,13 @@ class Ui_CGFw(object):
         if self.db["Online entries"] != 0:
             self.db["Local entries"] = self.db["Online entries"]
         else:
-            #read db and get num of entries
+            # update: forgot to implement this part
+            # read db and get num of entries
             pass
 
         self.setting["fw"] = self.fw_selected.currentText()
+        
+        # update: one statement is enough here
         if self.Online_mode.isChecked():
             self.setting["mode"] = "Online"
         else:
@@ -884,7 +889,7 @@ class Ui_CGFw(object):
             self.UpdateDbBtn.setEnabled(True)
             fw_database = self.fw_db["dir"] + self.fw_db["name"]
             errorFound = False
-
+            
             if os.path.exists(fw_database):
                 # Db firmwares must be greater than or equel 600 bytes
                 if os.path.getsize(fw_database) < 600:
@@ -904,6 +909,7 @@ class Ui_CGFw(object):
                 self.SubmitBtn.setEnabled(False)
 
     def updateProgressBar(self, percent):
+        # update: unused vars here
         max = self.db["Online entries"]
         num = int(max * (percent / 100))
         self.progressBar.setProperty("value", percent)
