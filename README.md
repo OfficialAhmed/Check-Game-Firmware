@@ -75,4 +75,4 @@ https://mega.nz/file/qiATzI5D#bxpCYMyc-AhQIwdwxVCVKpQxfDPeUvGTYx_CMzstyPw
 I will be improving this project ***(This is not the final version)***.
 # User Interface
 
-![CGFw v2.07](https://img.techpowerup.org/201014/capture.png)
+![CGFw v2.07](CGFw.jpg)
